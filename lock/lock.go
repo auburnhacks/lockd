@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sync/atomic"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 const (
@@ -47,6 +49,7 @@ func (l *Lock) notify(d time.Duration) {
 	select {
 	// TODO: will have to change this to a better notification
 	case <-time.Tick(d):
+		glog.Infof("lock %s expired", l.ServiceName)
 		l.Unlock()
 	}
 }

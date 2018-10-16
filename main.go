@@ -24,8 +24,16 @@ func main() {
 	glog.Infof("running server on localhost:8000")
 	config := config.New()
 	r := mux.NewRouter()
+	r.Use(loggingMiddleware)
 	r.Handle("/", &handlers.IndexHandler{Config: config})
 	r.Handle("/{service_name}/aquire/{ttl}", &handlers.AquireHandler{Config: config})
 	r.Handle("/{service_name}/release/", &handlers.ReleaseHandler{Config: config})
 	log.Fatal(http.ListenAndServe("localhost:8000", r))
+}
+
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		glog.Infof("%s %s", r.Method, r.RequestURI)
+		next.ServeHTTP(w, r)
+	})
 }
