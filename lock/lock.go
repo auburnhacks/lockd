@@ -11,6 +11,10 @@ import (
 const (
 	unlocked uint32 = iota
 	locked
+
+	LockAcquired string = "acquired"
+	LockReleased string = "released"
+	LockStandby  string = "standby"
 )
 
 var (
@@ -18,17 +22,17 @@ var (
 )
 
 type Lock struct {
-	ServiceName   string        `json:"service_name"`
-	TTL           time.Duration `json:"ttl"`
-	TerminateChan chan struct{} `json:"-"`
-	locker        uint32
+	ServiceName  string        `json:"service_name"`
+	TTL          time.Duration `json:"ttl"`
+	IsTerminated bool          `json:"is_terminated"`
+	locker       uint32
 }
 
 func NewLock(serviceName string, ttl time.Duration) *Lock {
 	return &Lock{
-		ServiceName:   serviceName,
-		TTL:           ttl,
-		TerminateChan: make(chan struct{}),
+		ServiceName:  serviceName,
+		TTL:          ttl,
+		IsTerminated: false,
 	}
 }
 
@@ -50,13 +54,16 @@ func (l *Lock) notify(d time.Duration) {
 	// TODO: will have to change this to a better notification
 	case <-time.Tick(d):
 		glog.Infof("lock %s expired", l.ServiceName)
+		l.IsTerminated = true
 		l.Unlock()
 	}
 }
 
-func (l *Lock) NotifyTTL() {
-	select {
-	case <-time.Tick(l.TTL):
-		l.TerminateChan <- struct{}{}
-	}
+type LockEvent struct {
+	EventType string
+	Lock      *Lock
+}
+
+func (le *LockEvent) GetEventType() {
+	return le.EventType
 }

@@ -74,3 +74,24 @@ func (h *ReleaseHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("ok"))
 }
+
+type AcquireWatchHandler struct {
+	Config *config.Config
+}
+
+func (h *AcquireWatchHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	glog.V(1).Infof("request to watch for a lock")
+
+	// client has to support flushing
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, fmt.Sprintf("error: streaming unsupported"), http.StatusInternalServerError)
+		return
+	}
+
+	// set some required headers
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+}
